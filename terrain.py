@@ -14,9 +14,9 @@ class Terrain:
         self.lacunarity = lacunarity
         self.terrain = np.zeros((width, height))
         self.fig, self.ax = plt.subplots()
-        self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+        self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
 
-    def next(self, _): # _ event objesi ve kullanmiyoruz
+    def next(self, _): # _ is an event object and we don't use it
         self.terrain = np.zeros((self.width, self.height))
         self.generate()
         self.l.set_data(self.terrain)
@@ -46,7 +46,7 @@ class Terrain:
         return self
 
     def show(self):
-        self.l = self.ax.imshow(self.terrain, cmap='Greens') # type: ignore imshow icin gereksiz hata
+        self.l = self.ax.imshow(self.terrain, cmap='BuGn') # type: ignore imshow type stuff not important # TODO: Make 0 values blue and 1 values green
         axbutton = plt.axes([0.8, 0.05, 0.1, 0.075])
         button = Button(axbutton, 'Re-plot')
         button.on_clicked(self.next)
