@@ -9,8 +9,6 @@ class Tile():
         self.land = land
         self.entity = None
 
-
-
 class Terrain:
     def __init__(self, width = 100, height = 100, scale = 35, octaves = 16, persistence = 0.7, lacunarity = 1.6):
         self.width = width
@@ -32,11 +30,11 @@ class Terrain:
     def generate(self):
         base = random.SystemRandom().randint(0, 10000)
         # For each row in the terrain array
-        for row in self.terrain:
+        for x in range(self.width):
             # For each column in the terrain array
-            for tile in row:
+            for y in range(self.height):
                 # Get the noise value for that position
-                tile.land = snoise2(x / self.scale,
+                self.terrain[x][y] = snoise2(x / self.scale,
                                              y / self.scale,
                                              octaves= self.octaves,
                                              persistence=self.persistence,
