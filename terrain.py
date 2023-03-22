@@ -34,14 +34,14 @@ class Terrain:
             # For each column in the terrain array
             for y in range(self.height):
                 # Get the noise value for that position
-                self.terrain[x][y] = snoise2(x / self.scale,
+                self.terrain[x][y] = Tile(snoise2(x / self.scale,
                                              y / self.scale,
                                              octaves= self.octaves,
                                              persistence=self.persistence,
                                              lacunarity=self.lacunarity,
                                              repeatx=self.width,
                                              repeaty=self.height,
-                                             base=base)
+                                             base=base))
 
     # Normalize the data so that it is between 0 and 1
         for row in self.terrain:
