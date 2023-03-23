@@ -1,9 +1,6 @@
-class Vegetob():
-    def __init__(self) -> None:
-        self.density = 0
-
-    def elaborate(self):
-        self.grow()
+class Vegetob(): # DarkGreen
+    def __init__(self, density) -> None:
+        self.density = density
 
     def get_density(self):
         return self.density
@@ -13,15 +10,13 @@ class Vegetob():
             self.density += 1
         return self
     
-class Carviz():
-    def __init__(self, move) -> None:
+class Carviz(): # Red
+    def __init__(self) -> None:
         self.energy = 0
         self.lifetime = 100
         self.age = 0
         self.social = 0.5
-        self.move = move
 
-    def elaborate(self):
-        self.age += 1
-        self.move()
-        return self
+class Erbast: # Yellow
+    def __init__(self) -> None:
+        self.energy = 0

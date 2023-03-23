@@ -1,8 +1,11 @@
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
+import matplotlib
 import numpy as np
 from noise import snoise2
 import random
+
+from species import Vegetob
 
 class Tile():
     def __init__(self, land) -> None:
@@ -18,8 +21,10 @@ class Terrain:
         self.persistence = persistence
         self.lacunarity = lacunarity
         self.terrain = np.full((width, height), Tile(0))
+        self.map = np.zeros((width, height))
         self.fig, self.ax = plt.subplots()
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
+        self.colormap = (matplotlib.colors.ListedColormap(['brown', 'red', 'green', 'yellow', 'blue']))
 
     def next(self, _): # _ is an event object and we don't use it
         self.terrain = np.full((self.width, self.height), Tile(0))
@@ -49,7 +54,6 @@ class Terrain:
                 tile.land = (tile.land + 1) / 2
 
         # Round the data to 0 or 1
-
         for row in self.terrain:
             for tile in row:
                 if tile.land > 0.5:
@@ -59,17 +63,16 @@ class Terrain:
 
         return self
 
-
-        # map = [[0]*self.height]*self.width
-        # for row, i in self.terrain:
-        #     for tile, j in row:
-        #         map[i][j] = tile.land
-
-
     def show(self):
-        self.l = self.ax.imshow( [[y.land for y in x] for x in self.terrain], cmap='BuGn') # type: ignore imshow type stuff not important # TODO: Make 0 values blue and 1 values green
+        self.l = self.ax.imshow( [[y.land for y in x] for x in self.terrain], cmap=self.colormap) # type: ignore imshow type stuff not important # TODO: Make 0 values blue and 1 values green
         axbutton = plt.axes([0.8, 0.05, 0.1, 0.075])
         button = Button(axbutton, 'Re-plot')
         button.on_clicked(self.next)
         plt.show()
         return self
+
+    def populate(self):
+        for row in self.terrain:
+            for tile in row:
+                if random.randint(1,10) < 3:
+                    tile.entity = Vegetob(random.randint(15,75))
