@@ -59,7 +59,7 @@ class Terrain:
         # Round the data to 0 or 1
         for row in self.terrain:
             for tile in row:
-                if tile.land > 0.5:
+                if tile.land > 0.45:
                     tile.land = 1
                     tile.color = 0
                 else:
