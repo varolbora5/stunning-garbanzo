@@ -6,6 +6,8 @@ import random
 
 from species import Carviz, Erbast, Vegetob
 
+color_list = ['black', '#F75555', 'green', 'yellow', '#1DD1E2']
+
 class Tile():
     def __init__(self, land) -> None:
         self.land = land
@@ -26,7 +28,7 @@ class Terrain:
         self.map = np.zeros((width, height))
         self.fig, self.ax = self.plt.subplots()
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
-        self.colormap = (matplotlib.colors.ListedColormap(['#87592C', '#F75555', 'green', 'yellow', '#1DD1E2'])) #type: ignore there is a false negative about mpl.colors not existing
+        self.colormap = (matplotlib.colors.ListedColormap(color_list)) #type: ignore there is a false negative about mpl.colors not existing
         self.color = None
 
     def next(self, _): # _ is an event object and we don't use it

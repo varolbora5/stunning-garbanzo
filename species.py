@@ -1,3 +1,5 @@
+import random
+
 class Vegetob(): # DarkGreen
     def __init__(self, density) -> None:
         self.density = density
@@ -7,7 +9,7 @@ class Vegetob(): # DarkGreen
 
     def grow(self):
         if self.density < 100:
-            self.density += 1
+            self.density += random.randint(1,10)
         return self
 
 class Carviz(): # Red
@@ -26,3 +28,6 @@ class Erbast: # Yellow
         self.lifetime = 100
         self.age = 0
         self.social = 0.5
+
+    def decide(self, map):
+        pass
