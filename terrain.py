@@ -12,11 +12,11 @@ from species import Carviz, Erbast, Vegetob, Decision, Move
 color_list = ['black', '#F75555', 'green', 'yellow', '#1DD1E2']
 
 class Tile():
-    def __init__(self, land) -> None:
+    def __init__(self, land=0, color=4) -> None:
         self.land = land
         self.vegetob = None
         self.entity = []
-        self.color = None
+        self.color = color
 
 class Terrain:
     def __init__(self, plt, width = 300, height = 300, scale = 95, octaves = 20, persistence = 0.7, lacunarity = 1.4):
@@ -27,25 +27,26 @@ class Terrain:
         self.octaves = octaves
         self.persistence = persistence
         self.lacunarity = lacunarity
-        self.terrain = np.full((width, height), Tile(0))
+        self.terrain = np.full((width, height), Tile(0, 4))
         self.map = np.zeros((width, height))
         self.fig, self.ax = self.plt.subplots()
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
         self.colormap = (matplotlib.colors.ListedColormap(color_list)) #type: ignore there is a false negative about mpl.colors not existing
+        self.animation = animation.FuncAnimation(self.fig, self.animate, interval=200)
+        self.animation.pause()
 
     def next(self, _): # _ is an event object and we don't use it
-        self.animation.pause()
         self.terrain = np.full((self.width, self.height), Tile(0))
         self.generate()
-        self.img.set_data([[y.color for y in x] for x in self.terrain])
-        self.plt.show()
+        self.img = self.ax.imshow([[y.color for y in x] for x in self.terrain], cmap=self.colormap)
+        self.fig.show()
 
     def generate(self):
         base = random.SystemRandom().randint(0, 10000)
         # For each row in the terrain array
-        for x in range(self.width):
+        for x in range(2, self.width-2):
             # For each column in the terrain array
-            for y in range(self.height):
+            for y in range(2, self.height-2):
                 # Get the noise value for that position
                 self.terrain[x][y] = Tile(snoise2(x / self.scale,
                                              y / self.scale,
@@ -59,7 +60,8 @@ class Terrain:
     # Normalize the data so that it is between 0 and 1
         for row in self.terrain:
             for tile in row:
-                tile.land = (tile.land + 1) / 2
+                if tile.land != 0:
+                    tile.land = (tile.land + 1) / 2
 
         # Round the data to 0 or 1
         for row in self.terrain:
@@ -78,10 +80,11 @@ class Terrain:
 
     def show(self):
         self.img = self.ax.imshow([[y.color for y in x] for x in self.terrain], cmap=self.colormap) # type: ignore imshow type stuff not important
-        ax_replot_button = self.plt.axes([0.8, 0.05, 0.1, 0.075])
+        print(self.terrain[0][0].color)
+        ax_replot_button = self.plt.axes([0.8, 0.15, 0.1, 0.075])
         replot_button = Button(ax_replot_button, 'Re-plot')
         replot_button.on_clicked(self.next)
-        ax_play_button = self.plt.axes([0.6, 0.05, 0.1, 0.075])
+        ax_play_button = self.plt.axes([0.8, 0.05, 0.1, 0.075])
         play_button = Button(ax_play_button, "Start")
         play_button.on_clicked(self.start_animate)
         self.plt.show()
@@ -102,9 +105,7 @@ class Terrain:
                         tile.entity.append(Erbast())
                         tile.color = 3
 
-    def start_animate(self, arg):
-        self.animation = animation.FuncAnimation(self.fig, self.animate, interval=200, blit=True)
-        self.animation.pause()
+    def start_animate(self, _):
         self.animation.resume()
 
     def animate(self, _):
@@ -122,5 +123,4 @@ class Terrain:
                                     else:
                                         self.terrain[x][y].color = 2
                                 self.terrain[x+direction[0]][y+direction[1]].color = self.terrain[x+direction[0]][y+direction[1]].entity[0].color
-        self.img.set_data([[y.color for y in x] for x in self.terrain])
-        return self.img,
+        return [[y.color for y in x] for x in self.terrain],
