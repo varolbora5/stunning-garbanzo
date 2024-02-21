@@ -1,8 +1,17 @@
+import typing
+from dataclasses import dataclass
 import random
+
+@dataclass
+class Move:
+    direction: [int]
+
+Decision = Move | None
 
 class Vegetob(): # DarkGreen
     def __init__(self, density) -> None:
         self.density = density
+        self.color = 2
 
     def get_density(self):
         return self.density
@@ -18,8 +27,10 @@ class Carviz(): # Red
         self.lifetime = 100
         self.age = 0
         self.social = 0.5
+        self.was_attacked = False
+        self.color = 1
 
-    def decide(self, map):
+    def decide(self, map) -> Decision:
         pass
 
 class Erbast: # Yellow
@@ -28,6 +39,8 @@ class Erbast: # Yellow
         self.lifetime = 100
         self.age = 0
         self.social = 0.5
+        self.was_attacked = False
+        self.color = 3
 
-    def decide(self, map):
-        pass
+    def decide(self, map) -> Decision:
+        return [random.randint(-1,1), random.randint(-1,1)]

@@ -1,10 +1,13 @@
+from typing_extensions import List
 from matplotlib.widgets import Button
+import typing
 import matplotlib
+from matplotlib import animation
 import numpy as np
 from noise import snoise2
 import random
 
-from species import Carviz, Erbast, Vegetob
+from species import Carviz, Erbast, Vegetob, Decision, Move
 
 color_list = ['black', '#F75555', 'green', 'yellow', '#1DD1E2']
 
@@ -12,7 +15,7 @@ class Tile():
     def __init__(self, land) -> None:
         self.land = land
         self.vegetob = None
-        self.entity = None
+        self.entity = []
         self.color = None
 
 class Terrain:
@@ -29,13 +32,13 @@ class Terrain:
         self.fig, self.ax = self.plt.subplots()
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
         self.colormap = (matplotlib.colors.ListedColormap(color_list)) #type: ignore there is a false negative about mpl.colors not existing
-        self.color = None
 
     def next(self, _): # _ is an event object and we don't use it
+        self.animation.pause()
         self.terrain = np.full((self.width, self.height), Tile(0))
         self.generate()
-        self.l.set_data([[y.color for y in x] for x in self.terrain])
-        self.plt.draw()
+        self.img.set_data([[y.color for y in x] for x in self.terrain])
+        self.plt.show()
 
     def generate(self):
         base = random.SystemRandom().randint(0, 10000)
@@ -74,10 +77,13 @@ class Terrain:
         return self
 
     def show(self):
-        self.l = self.ax.imshow( [[y.color for y in x] for x in self.terrain], cmap=self.colormap) # type: ignore imshow type stuff not important
-        axbutton = self.plt.axes([0.8, 0.05, 0.1, 0.075])
-        button = Button(axbutton, 'Re-plot')
-        button.on_clicked(self.next)
+        self.img = self.ax.imshow([[y.color for y in x] for x in self.terrain], cmap=self.colormap) # type: ignore imshow type stuff not important
+        ax_replot_button = self.plt.axes([0.8, 0.05, 0.1, 0.075])
+        replot_button = Button(ax_replot_button, 'Re-plot')
+        replot_button.on_clicked(self.next)
+        ax_play_button = self.plt.axes([0.6, 0.05, 0.1, 0.075])
+        play_button = Button(ax_play_button, "Start")
+        play_button.on_clicked(self.start_animate)
         self.plt.show()
         return self
 
@@ -90,8 +96,31 @@ class Terrain:
                         tile.vegetob = Vegetob(random.randint(15,75))
                         tile.color = 2
                     if bruh > 20 and bruh < 45:
-                        tile.entity = Carviz()
+                        tile.entity.append(Carviz())
                         tile.color = 1
                     elif bruh > 75:
-                        tile.entity = Erbast()
+                        tile.entity.append(Erbast())
                         tile.color = 3
+
+    def start_animate(self, arg):
+        self.animation = animation.FuncAnimation(self.fig, self.animate, interval=200, blit=True)
+        self.animation.pause()
+        self.animation.resume()
+
+    def animate(self, _):
+        for x in range(self.width):
+            for y in range(self.height):
+                map = self.terrain[x-2:x+3, y-2:y+3]
+                for i in range(len(self.terrain[x][y].entity)):
+                    match self.terrain[x][y].entity[i].decide(map):
+                        case Move(direction):
+                            if isinstance(self.terrain[x+direction[0]][y+direction[1]].entity[0], self.terrain[x][y].entity[0]):
+                                self.terrain[x+direction[0]][y+direction[1]].entity.append(self.terrain[x][y].entity.pop(i))
+                                if len(self.terrain[x][y].entity) < 1:
+                                    if self.terrain[x][y].vegetob is None:
+                                        self.terrain[x][y].color = 0
+                                    else:
+                                        self.terrain[x][y].color = 2
+                                self.terrain[x+direction[0]][y+direction[1]].color = self.terrain[x+direction[0]][y+direction[1]].entity[0].color
+        self.img.set_data([[y.color for y in x] for x in self.terrain])
+        return self.img,
