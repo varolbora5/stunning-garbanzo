@@ -1,10 +1,11 @@
 import typing
 from dataclasses import dataclass
 import random
+from typing_extensions import List
 
 @dataclass
 class Move:
-    direction: [int]
+    direction: List[int]
 
 Decision = Move | None
 
@@ -31,7 +32,7 @@ class Carviz(): # Red
         self.color = 1
 
     def decide(self, map) -> Decision:
-        pass
+        return Move([random.randint(-1,1), random.randint(-1,1)])
 
 class Erbast: # Yellow
     def __init__(self) -> None:
@@ -43,4 +44,4 @@ class Erbast: # Yellow
         self.color = 3
 
     def decide(self, map) -> Decision:
-        return [random.randint(-1,1), random.randint(-1,1)]
+        return Move([random.randint(-1,1), random.randint(-1,1)])

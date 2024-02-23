@@ -1,4 +1,5 @@
 from typing_extensions import List
+from matplotlib.cbook import time
 from matplotlib.widgets import Button
 import typing
 import matplotlib
@@ -10,6 +11,12 @@ import random
 from species import Carviz, Erbast, Vegetob, Decision, Move
 
 color_list = ['black', '#F75555', 'green', 'yellow', '#1DD1E2']
+
+def debug(*args):
+    result = ""
+    for arg in args:
+        result += str(arg) + " "
+    print(result.strip())
 
 class Tile():
     def __init__(self, land=0, color=4) -> None:
@@ -32,14 +39,15 @@ class Terrain:
         self.fig, self.ax = self.plt.subplots()
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
         self.colormap = (matplotlib.colors.ListedColormap(color_list)) #type: ignore there is a false negative about mpl.colors not existing
-        self.animation = animation.FuncAnimation(self.fig, self.animate, interval=200)
-        self.animation.pause()
+        self.anim = animation.FuncAnimation(fig=self.fig, func=self.animate, frames=np.arange(0, 60, 1), repeat=True)
+        self.anim.event_source.stop()
+        self.stop = True
 
     def next(self, _): # _ is an event object and we don't use it
         self.terrain = np.full((self.width, self.height), Tile(0))
         self.generate()
-        self.img = self.ax.imshow([[y.color for y in x] for x in self.terrain], cmap=self.colormap)
-        self.fig.show()
+        self.img.set_data([[y.color for y in x] for x in self.terrain])
+        self.plt.draw()
 
     def generate(self):
         base = random.SystemRandom().randint(0, 10000)
@@ -81,7 +89,7 @@ class Terrain:
     def show(self):
         self.img = self.ax.imshow([[y.color for y in x] for x in self.terrain], cmap=self.colormap) # type: ignore imshow type stuff not important
         print(self.terrain[0][0].color)
-        ax_replot_button = self.plt.axes([0.8, 0.15, 0.1, 0.075])
+        ax_replot_button = self.plt.axes([0.8, 0.13, 0.1, 0.075])
         replot_button = Button(ax_replot_button, 'Re-plot')
         replot_button.on_clicked(self.next)
         ax_play_button = self.plt.axes([0.8, 0.05, 0.1, 0.075])
@@ -106,21 +114,33 @@ class Terrain:
                         tile.color = 3
 
     def start_animate(self, _):
-        self.animation.resume()
+        self.anim.resume()
 
     def animate(self, _):
         for x in range(self.width):
             for y in range(self.height):
                 map = self.terrain[x-2:x+3, y-2:y+3]
-                for i in range(len(self.terrain[x][y].entity)):
-                    match self.terrain[x][y].entity[i].decide(map):
-                        case Move(direction):
-                            if isinstance(self.terrain[x+direction[0]][y+direction[1]].entity[0], self.terrain[x][y].entity[0]):
-                                self.terrain[x+direction[0]][y+direction[1]].entity.append(self.terrain[x][y].entity.pop(i))
-                                if len(self.terrain[x][y].entity) < 1:
-                                    if self.terrain[x][y].vegetob is None:
-                                        self.terrain[x][y].color = 0
-                                    else:
-                                        self.terrain[x][y].color = 2
-                                self.terrain[x+direction[0]][y+direction[1]].color = self.terrain[x+direction[0]][y+direction[1]].entity[0].color
-        return [[y.color for y in x] for x in self.terrain],
+                if len(self.terrain[x][y].entity) > 0:
+                    for i in range(len(self.terrain[x][y].entity)):
+                        try:
+                            match self.terrain[x][y].entity[i].decide(map):
+                                case Move(direction):
+                                    fuck = False
+                                    try:
+                                        fuck = isinstance(self.terrain[x+direction[0]][y+direction[1]].entity[0], type(self.terrain[x][y].entity[0]))
+                                    except IndexError:
+                                        fuck = True
+                                    if fuck == True and self.terrain[x+direction[0]][y+direction[1]].land == 1:
+                                        self.terrain[x+direction[0]][y+direction[1]].entity.append(self.terrain[x][y].entity.pop(i))
+                                        if len(self.terrain[x][y].entity) < 1:
+                                            if self.terrain[x][y].vegetob is None:
+                                                self.terrain[x][y].color = 0
+                                            else:
+                                                self.terrain[x][y].color = 2
+                                        self.terrain[x+direction[0]][y+direction[1]].color = self.terrain[x+direction[0]][y+direction[1]].entity[0].color
+                        except IndexError:
+                            # debug(x, y, i)
+                            pass
+        self.img.set(data=[[y.color for y in x] for x in self.terrain])
+        self.plt.draw()
+        return self.img
