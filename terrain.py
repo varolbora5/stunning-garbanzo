@@ -119,6 +119,8 @@ class Terrain:
     def animate(self, _):
         for x in range(self.width):
             for y in range(self.height):
+                if self.terrain[x][y].vegetob:
+                    self.terrain[x][y].vegetob.grow()
                 map = self.terrain[x-2:x+3, y-2:y+3]
                 if len(self.terrain[x][y].entity) > 0:
                     for i in range(len(self.terrain[x][y].entity)):
