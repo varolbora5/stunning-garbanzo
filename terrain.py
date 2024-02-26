@@ -9,7 +9,6 @@ from noise import snoise2
 import random
 
 from species import Carviz, Erbast, Vegetob, Decision, Move
-
 color_list = ['black', '#F75555', 'green', 'yellow', '#1DD1E2']
 
 def debug(*args):
@@ -40,7 +39,7 @@ class Terrain:
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
         self.colormap = (matplotlib.colors.ListedColormap(color_list)) #type: ignore there is a false negative about mpl.colors not existing
         self.anim = animation.FuncAnimation(fig=self.fig, func=self.animate, frames=np.arange(0, 60, 1), repeat=True)
-        self.anim.event_source.stop()
+        # self.anim.pause()
         self.stop = True
 
     def next(self, _): # _ is an event object and we don't use it
@@ -116,14 +115,44 @@ class Terrain:
     def start_animate(self, _):
         self.anim.resume()
 
+    def kill(self, x,y,i):
+        del self.terrain[x][y].entity[i]
+        try:
+            if self.terrain[x][y].entity[0] is Erbast:
+                self.terrain[x][y].color = 3
+            elif self.terrain[x][y].entity[0] is Carviz:
+                self.terrain[x][y].color = 1
+        except IndexError:
+            if self.terrain[x][y].vegetob is None:
+                self.terrain[x][y].color = 0
+            else:
+                self.terrain[x][y].color = 2
+
+    def spawn(self, x, y, energy, social_attitude):
+        deviation = random.randint(0,10)
+        if self.terrain[x][y].entity[0] is Carviz:
+            self.terrain[x][y].entity.append(Carviz(energy/2, social_attitude + deviation))
+            self.terrain[x][y].entity.append(Carviz(energy/2, social_attitude - deviation))
+            self.terrain[x][y].color = 1
+        else:
+            self.terrain[x][y].entity.append(Erbast(energy/2, social_attitude + deviation))
+            self.terrain[x][y].entity.append(Erbast(energy/2, social_attitude - deviation))
+            self.terrain[x][y].color = 3
+
     def animate(self, _):
         for x in range(self.width):
             for y in range(self.height):
                 if self.terrain[x][y].vegetob:
                     self.terrain[x][y].vegetob.grow()
                 map = self.terrain[x-2:x+3, y-2:y+3]
-                if len(self.terrain[x][y].entity) > 0:
+                if len(self.terrain[x][y].entity) != 0 and self.terrain[x][y].land == 1:
                     for i in range(len(self.terrain[x][y].entity)):
+                        try:
+                            if self.terrain[x][y].entity[i].age > 100:
+                                self.spawn(x, y, self.terrain[x][y].entity[i].energy, self.terrain[x][y].entity[i].social_attitude)
+                                self.kill(x,y,i)
+                        except Exception:
+                            pass
                         try:
                             match self.terrain[x][y].entity[i].decide(map):
                                 case Move(direction):
@@ -144,5 +173,5 @@ class Terrain:
                             # debug(x, y, i)
                             pass
         self.img.set(data=[[y.color for y in x] for x in self.terrain])
-        self.plt.draw()
+        # self.plt.draw()
         return self.img

@@ -7,7 +7,12 @@ from typing_extensions import List
 class Move:
     direction: List[int]
 
-Decision = Move | None
+# @dataclass
+# class Split:
+#     direction: List[int]
+# they do not split by decision
+
+Decision = Move |  None
 
 class Vegetob(): # DarkGreen
     def __init__(self, density) -> None:
@@ -23,25 +28,27 @@ class Vegetob(): # DarkGreen
         return self
 
 class Carviz(): # Red
-    def __init__(self) -> None:
-        self.energy = 0
+    def __init__(self, energy = 0, social_attitude=0) -> None:
+        self.energy = energy
         self.lifetime = 100
-        self.age = 0
-        self.social = 0.5
+        self.age = 80
+        self.social = social_attitude
         self.was_attacked = False
         self.color = 1
 
     def decide(self, map) -> Decision:
+        self.age += 1
         return Move([random.randint(-1,1), random.randint(-1,1)])
 
 class Erbast: # Yellow
-    def __init__(self) -> None:
-        self.energy = 0
+    def __init__(self, energy=0, social_attitude=0) -> None:
+        self.energy = energy
         self.lifetime = 100
-        self.age = 0
-        self.social = 0.5
+        self.age = 80
+        self.social = social_attitude
         self.was_attacked = False
         self.color = 3
 
     def decide(self, map) -> Decision:
+        self.age += 1
         return Move([random.randint(-1,1), random.randint(-1,1)])
