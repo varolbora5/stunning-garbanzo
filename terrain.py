@@ -8,7 +8,7 @@ import numpy as np
 from noise import snoise2
 import random
 
-from species import Carviz, Erbast, Vegetob, Decision, Move
+from species import Attack, Carviz, Erbast, Graze, Vegetob, Decision, Move
 color_list = ['black', '#F75555', 'green', 'yellow', '#1DD1E2']
 
 def debug(*args):
@@ -38,7 +38,7 @@ class Terrain:
         self.fig, self.ax = self.plt.subplots()
         self.fig.subplots_adjust(left=0, right=1, bottom=0, top=1) # TODO: Adjust the alignment
         self.colormap = (matplotlib.colors.ListedColormap(color_list)) #type: ignore there is a false negative about mpl.colors not existing
-        self.anim = animation.FuncAnimation(fig=self.fig, func=self.animate, frames=np.arange(0, 60, 1), repeat=True)
+        self.anim = animation.FuncAnimation(fig=self.fig, func=self.animate, frames=np.arange(0, 60, 1), repeat=True, interval=300)
         # self.anim.pause()
         self.stop = True
 
@@ -146,32 +146,80 @@ class Terrain:
                     self.terrain[x][y].vegetob.grow()
                 map = self.terrain[x-2:x+3, y-2:y+3]
                 if len(self.terrain[x][y].entity) != 0 and self.terrain[x][y].land == 1:
+                    amount_of_grazers = 0
                     for i in range(len(self.terrain[x][y].entity)):
+                        decision: Decision = None
                         try:
-                            if self.terrain[x][y].entity[i].age > 100:
-                                self.spawn(x, y, self.terrain[x][y].entity[i].energy, self.terrain[x][y].entity[i].social_attitude)
-                                self.kill(x,y,i)
-                        except Exception:
-                            pass
-                        try:
-                            match self.terrain[x][y].entity[i].decide(map):
-                                case Move(direction):
-                                    fuck = False
-                                    try:
-                                        fuck = isinstance(self.terrain[x+direction[0]][y+direction[1]].entity[0], type(self.terrain[x][y].entity[0]))
-                                    except IndexError:
-                                        fuck = True
-                                    if fuck == True and self.terrain[x+direction[0]][y+direction[1]].land == 1:
-                                        self.terrain[x+direction[0]][y+direction[1]].entity.append(self.terrain[x][y].entity.pop(i))
-                                        if len(self.terrain[x][y].entity) < 1:
-                                            if self.terrain[x][y].vegetob is None:
-                                                self.terrain[x][y].color = 0
-                                            else:
-                                                self.terrain[x][y].color = 2
-                                        self.terrain[x+direction[0]][y+direction[1]].color = self.terrain[x+direction[0]][y+direction[1]].entity[0].color
+                            decision = self.terrain[x][y].entity[i].decide(map)
                         except IndexError:
                             # debug(x, y, i)
                             pass
+                        match decision:
+                            case Move(direction):
+                                self.terrain[x][y].entity[i].set_energy(-1, True)
+                                fuck = False
+                                try:
+                                    fuck = isinstance(self.terrain[x+direction[0]][y+direction[1]].entity[0], type(self.terrain[x][y].entity[0]))
+                                except IndexError:
+                                    fuck = True
+                                if fuck == True and self.terrain[x+direction[0]][y+direction[1]].land == 1:
+                                    self.terrain[x+direction[0]][y+direction[1]].entity.append(self.terrain[x][y].entity.pop(i))
+                                    if len(self.terrain[x][y].entity) < 1:
+                                        if self.terrain[x][y].vegetob is None:
+                                            self.terrain[x][y].color = 0
+                                        else:
+                                            self.terrain[x][y].color = 2
+                                    self.terrain[x+direction[0]][y+direction[1]].color = self.terrain[x+direction[0]][y+direction[1]].entity[0].color
+                            case Graze(_):
+                                if self.terrain[x][y].vegetob is Vegetob:
+                                    amount_of_grazers += 1
+                                    self.terrain[x][y].entity[i].grazed = True
+                    if amount_of_grazers != 0:
+                        graze_amount = self.terrain[x][y].vegetob.get_density() / amount_of_grazers
+                        for erbast in [x for x in self.terrain[x][y].entity if x.grazed == True]:
+                            erbast.set_energy(graze_amount, True)
+        for x in range(self.width):
+            for y in range(self.height):
+                map = self.terrain[x-2:x+3, y-2:y+3]
+                if len(self.terrain[x][y].entity) == 0: continue
+                for i in range(len(self.terrain[x][y].entity)):
+                    if not isinstance(self.terrain[x][y].entity[i], Carviz): continue
+                    decision = None
+                    try:
+                        decision: Decision = self.terrain[x][y].entity[i].decide(map, hunt=True)
+                    except IndexError:
+                        # debug(x, y, i)
+                        pass
+                    match decision:
+                        case Attack(direction):
+                            if isinstance(self.terrain[x+direction[0]][y+direction[1]].entity[0], Erbast):
+                                damage = random.randint(30,50)
+                                if self.terrain[x+direction[0]][y+direction[1]].entity[0].energy < damage:
+                                    self.terrain[x][y].entity[i].set_energy(self.terrain[x+direction[0]][y+direction[1]].entity[0].energy, True)
+                                    self.kill(x+direction[0],y+direction[1],0)
+                                else:
+                                    self.terrain[x+direction[0]][y+direction[1]].entity[0].set_energy(-damage, True)
+                                    self.terrain[x][y].entity[i].set_energy(-random.randint(40,60), True)
+                        case _:
+                            pass
+        for x in range(self.width):
+            for y in range(self.height):
+                for i in range(len(self.terrain[x][y].entity)):
+                    killed = False
+                    try:
+                        if self.terrain[x][y].entity[i].age > 100:
+                            self.spawn(x, y, self.terrain[x][y].entity[i].energy, self.terrain[x][y].entity[i].social_attitude)
+                            self.kill(x,y,i)
+                            killed = True
+
+                        if not killed and self.terrain[x][y].entity[i].energy < 1:
+                            self.kill(x,y,i)
+                    except IndexError:
+                        print(IndexError)
         self.img.set(data=[[y.color for y in x] for x in self.terrain])
         # self.plt.draw()
-        return self.img
+        # for x in range(self.width):
+        #     for y in range(self.height):
+        #         for i in range(len(self.terrain[x][y].entity)):
+        #             print(self.terrain[x][y].entity[i].energy, end=" ")
+        return True
